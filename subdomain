@@ -1,0 +1,30 @@
+from playwright.sync_api import sync_playwright
+
+domain = input("enter the domain name: ")
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+    page.goto(f"https://crt.sh/?q={domain}")
+    page.wait_for_selector("table")
+    tds = page.query_selector_all("table td")
+
+    # Filter only subdomains
+    subdomains = []
+    for td in tds:
+        text = td.inner_text().strip()
+        if domain in text and all(x not in text for x in ["=", "/", "CN=", "O=", "C=", " "]) and "@" not in text:
+            subdomains.append(text)
+
+    # Remove duplicates and sort
+    subdomains = sorted(set(subdomains))
+
+    print("\nFound subdomains:")
+    for sub in subdomains:
+        print(sub)
+        
+    with open(f"F:\\custom tools\\subdomains\\{domain}_subdomains.txt","w") as f:
+        for sub in subdomains:
+            f.write(sub+"\n")
+    
+    browser.close()
